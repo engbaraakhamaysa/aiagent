@@ -6,13 +6,18 @@ import argparse
 # Load variables from the .env file.
 load_dotenv()
 
-# Get the OpenRouter API key from the environment.
 api_key = os.environ.get("OPENROUTER_API_KEY")
 
 if api_key is None:
     raise RuntimeError("OPENROUTER_API_KEY is not set")
 
-# Configure the OpenAI client to use OpenRouter.
+
+# Create the API client.
+#
+# base_url tells the OpenAI SDK to send requests to OpenRouter
+# instead of the default OpenAI API.
+#
+# api_key is used to authenticate our requests.
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=api_key,
@@ -21,8 +26,9 @@ client = OpenAI(
 
 def main():
 
-    # Read the user's prompt from the command line.
     parser = argparse.ArgumentParser(description="Chatbot")
+
+    # Add the user's prompt as a required command-line argument.
     parser.add_argument("user_prompt", type=str, help="User prompt")
 
     # Optional flag for displaying extra information.
@@ -30,7 +36,7 @@ def main():
 
     args = parser.parse_args()
   
-    # The messages list represents the conversation history.
+  
     messages = [
        {"role":"user", "content":args.user_prompt}
     ]
