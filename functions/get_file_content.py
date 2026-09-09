@@ -47,3 +47,22 @@ def get_file_content(working_directory: str, file_path: str) -> str:
 
     except Exception as e:
         return f"Error: {e}"
+
+# Define tool schemas that describe the available functions and their parameters to the LLM.
+schema_get_file_content = {
+    "type": "function",
+    "function": {
+        "name": "get_file_content",
+        "description": "Reads the contents of a file within the working directory",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "Path to the file to read, relative to the working directory",
+                },
+            },
+            "required": ["file_path"],
+        },
+    },
+}

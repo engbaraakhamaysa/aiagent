@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import argparse
 
+from prompts import system_prompt
+from call_function import available_functions, call_function
+
 # Load variables from the .env file.
 load_dotenv()
 
@@ -38,26 +41,57 @@ def main():
   
   
     messages = [
-       {"role":"user", "content":args.user_prompt}
+
+       {"role":"system", "content":system_prompt},
+       {"role":"user", "content":args.user_prompt},
     ]
 
-    # Send the conversation to the LLM.
-    response = client.chat.completions.create(
-        model="openrouter/free",
-        messages=messages,
-    )
 
-    if response.usage is None:
-        raise RuntimeError("Response usage is missing")
+    for _ in range(20):
 
-    # Show token information only in verbose mode.
-    if args.verbose:
-        print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage.prompt_tokens}")
-        print(f"Response tokens: {response.usage.completion_tokens}")
+        # Send the conversation to the LLM.
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages=messages,
+            tools=available_functions,
+        )
+ 
 
-    print("Response:")
-    print(response.choices[0].message.content)
+        if response.usage is None:
+            raise RuntimeError("Response usage is missing")
+
+        # Show token information only in verbose mode.
+        if args.verbose:
+            print(f"User prompt: {args.user_prompt}")
+            print(f"Prompt tokens: {response.usage.prompt_tokens}")
+            print(f"Response tokens: {response.usage.completion_tokens}")
+
+
+
+        message = response.choices[0].message
+        messages.append(message)
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                result_message = call_function(
+                    tool_call,
+                    verbose=args.verbose,
+                )
+
+                if not result_message["content"]:
+                    raise RuntimeError("Function returned an empty result")
+
+                messages.append(result_message)
+
+                if args.verbose:
+                    print(f"-> {result_message['content']}")
+
+        else:
+            print("Response:")
+            print(message.content)
+            break
+        
+    else:    
+        print("Agent reached maximum iterations without a final response.")
 
 
 if __name__ == "__main__":
